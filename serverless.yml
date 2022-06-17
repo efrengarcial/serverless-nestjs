@@ -1,0 +1,96 @@
+service: serverless-nestjs
+
+plugins:
+  - serverless-esbuild
+  - serverless-plugin-warmup #https://www.serverless.com/plugins/serverless-plugin-warmup
+  - serverless-dynamodb-local
+  - serverless-offline
+
+provider:
+  name: aws
+  runtime: nodejs14.x
+  stage: ${opt:stage, 'dev'}
+  environment:
+    DYNAMODB_ENDPOINT: ${self:custom.endpoints.dynamodbURL}
+    ONLINE_LIBRARY_TABLE_NAME: ${self:custom.onlineLibraryTable.name}
+  iamRoleStatements: ${file(resources/online-libraryIAM.yml)}
+
+resources:
+  Resources:
+    onlineLibraryTable: ${file(resources/online-library.yml):onlineLibraryTable}
+
+package:
+  exclude:
+    - .gitignore
+    - README.md
+    - serverless.yml
+    - nest-cli.json
+    - .prettierrc
+  excludeDevDependencies: true
+
+functions:
+  main:
+    handler: src/index.handler
+    events:
+      - http:
+          method: ANY
+          path: /
+      - http:
+          method: ANY
+          path: '{proxy+}'
+    warmup:
+      default:
+        enabled: true
+custom:
+  warmup:
+    default:
+      enabled: true
+      events:
+        - schedule: cron(0/5 13-22 ? * MON-FRI *)
+      concurrency: 1
+      package:
+        individually: true
+      timeout: 20
+      tracing: true
+      prewarm: true # Run WarmUp immediately after a deploymentlambda
+      payloadRaw: true # Won'
+
+  package:
+    individually: true
+
+  esbuild:
+    bundle: true
+    minify: false
+    plugins: plugins.js
+    platform: 'node'
+    external:
+      - "cache-manager"
+      - "class-transformer"
+      - "class-validator"
+      - "@nestjs/microservices"
+      - "@nestjs/websockets/socket-module"
+      - "fastify-swagger"
+      - "@nestjs/platform-express"
+      - "fastify-static"
+      - "point-of-view"
+    watch:
+      pattern: ['src/**/*.ts']
+
+  dynamodb:
+    stages:
+      - ${self:provider.stage}
+    start:
+      port: 8000
+      migrate: true
+  endpoints:
+    dynamodbURL: 'http://localhost:8000'
+
+  
+  stages:
+    - dev
+    - test
+    - prod
+  
+  onlineLibraryTable:
+    name: online-library-${self:provider.stage}
+    arn: !GetAtt onlineLibraryTable.Arn
