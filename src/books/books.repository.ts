@@ -1,6 +1,8 @@
 import { Injectable, InternalServerErrorException, NotFoundException } from "@nestjs/common";
 import { DocumentClient } from "aws-sdk/clients/dynamodb"; 
+import { Entity, Table } from 'dynamodb-toolbox';
 import * as AWS from 'aws-sdk';
+import { IBook } from "./ibook";
 
 @Injectable()
 export class BooksRepository {
@@ -10,6 +12,7 @@ export class BooksRepository {
 
     private bookPrefix = 'BOOK#';
     private authorPrefix = 'AUTH#'    
+    private bookEntity: Entity<IBook, undefined, Table<string, "PK", "SK">>;
 
 
     constructor() {
@@ -23,22 +26,49 @@ export class BooksRepository {
         } else {
             this.db = new AWS.DynamoDB.DocumentClient();
         }
+
+        const table = new Table({
+            name: this.tableName,
+            partitionKey: 'PK',
+            sortKey: 'SK',
+            DocumentClient:  this.db ,
+          });
+
+        this.bookEntity = new Entity<IBook, undefined, Table<string, "PK", "SK">>({
+            name: 'Book',
+            attributes: {
+                isbn: {  partitionKey: true, prefix: 'BOOK#' },
+                sk: { hidden: true, sortKey: true , prefix: 'BOOK#' , default: (data) => `${data.isbn}` },
+                title: { type: 'string', required: true },   
+                reserved:  { type : 'boolean' , default: false},
+                edition:  { type : 'number'},
+                publisher:  { type : 'string'}
+                //isbn:  ['sk',0, { type: 'string', save: false} ],  
+            },
+            table,
+        } as const);
+      
+    }
+
+    async createBook(book: IBook) {
+        try {
+           return this.bookEntity.put(book);
+
+        } catch (error) {
+            throw new InternalServerErrorException(error);
+        }
     }
 
 
     async getBook(isbn: number) {
-        let book: object;
+        let book: IBook;
        
         try {
-            const result = await this.db
-                .get({
-                    TableName: this.tableName,
-                    Key: { PK: this.bookPrefix.concat(String(isbn)),
-                           SK: this.bookPrefix.concat(String(isbn))},
-                })
-                .promise();
+            const response = await this.bookEntity.get(
+                { isbn: isbn, sk: isbn }                
+            );
+            book = response.Item;    
 
-            book = result.Item;
         } catch (error) {
             throw new InternalServerErrorException(error);
         }
@@ -53,25 +83,22 @@ export class BooksRepository {
     async getBooksByAuthor(lastName: string, firstName: string) {
         let books = [];
         console.log(this.authorPrefix.concat(lastName.toUpperCase()).concat("_").concat(firstName.toUpperCase()));
-
+       
         try {
-            const result = await this.db
-                .query({
-                    TableName: this.tableName,
-                    KeyConditionExpression: '#PK=:PK AND begins_with(#SK, :SK)',
-                    ExpressionAttributeNames: {
-                        '#PK': 'PK',
-                        '#SK': 'SK'
-                    },
-                    ExpressionAttributeValues: {
-                        ':PK': this.authorPrefix.concat(lastName.toUpperCase()).concat("_").concat(firstName.toUpperCase()),
-                        ':SK': this.bookPrefix
-                    },
-                    ScanIndexForward: false,
-                    Limit: 100
-                })
-                .promise();
+            const result = await this.bookEntity.query(
+                this.authorPrefix.concat(lastName.toUpperCase()).concat("_").concat(firstName.toUpperCase()), // partition key
+                {
+                  limit: 50, // limit to 50 items
+                  beginsWith: this.bookPrefix, // select items where sort key begins with value
+                  reverse: true, // return items in descending order (newest first)
+                  capacity: 'indexes', // return the total capacity consumed by the indexes
+                  //filters: { attr: 'total', gt: 100 }, // only show orders above $100
+                  //index: 'GSI1' // query the GSI1 secondary index
+                }
+              );
+    
             books = result.Items;
+            console.log(books);
         } catch (error) {
             throw new InternalServerErrorException(error);
         }

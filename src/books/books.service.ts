@@ -1,5 +1,6 @@
 import { Injectable } from '@nestjs/common';
 import {BooksRepository} from "./books.repository";
+import { IBook } from './ibook';
 
 @Injectable()
 export class BooksService {
@@ -12,5 +13,9 @@ export class BooksService {
 
     async getAuthorBooks(lastName: string, firstName: string) {
         return await this.bookRepo.getBooksByAuthor(lastName, firstName);
+    }
+
+    async createBook(book: IBook) {
+        return await this.bookRepo.createBook(book);
     }
 }
