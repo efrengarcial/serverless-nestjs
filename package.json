@@ -51,7 +51,7 @@
     "prettier": "^2.3.2",
     "serverless-dynamodb-local": "^0.2.40",
     "serverless-esbuild": "^1.25.0",
-    "serverless-offline": "^8.5.0",
+    "serverless-offline": "^8.8.1",
     "serverless-plugin-warmup": "^7.1.0",
     "source-map-support": "^0.5.20",
     "supertest": "^6.1.3",
