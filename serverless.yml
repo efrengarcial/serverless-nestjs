@@ -4,11 +4,13 @@ plugins:
   - serverless-esbuild
   - serverless-plugin-warmup #https://www.serverless.com/plugins/serverless-plugin-warmup
   - serverless-dynamodb-local
+  - serverless-plugin-lambda-insights
   - serverless-offline
-
+  
 provider:
   name: aws
-  runtime: nodejs14.x
+  runtime: nodejs16.x
+  memorySize: 128
   stage: ${opt:stage, 'dev'}
   environment:
     DYNAMODB_ENDPOINT: ${self:custom.endpoints.dynamodbURL}
@@ -84,6 +86,9 @@ custom:
       migrate: true
   endpoints:
     dynamodbURL: 'http://localhost:8000'
+  
+  lambdaInsights:
+    defaultLambdaInsights: true #enables Lambda Insights for all functions
 
   
   stages:

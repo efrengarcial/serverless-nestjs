@@ -8,21 +8,18 @@ export class BooksController {
     constructor(private bookService: BooksService){}
 
     @Post()
-    async createBook(@Body() book:IBook, @Res() res: any){
-        const result: object = await this.bookService.createBook(book);
-        return res.status(HttpStatus.CREATED).send(result);
+    createBook(@Body() book:IBook){
+        return this.bookService.createBook(book);                
     }
 
     @Get("/:isbn")
-    async getBookByISBN(@Param('isbn') isbn:number, @Res() res: any){
-        const book: IBook = await this.bookService.getBook(isbn);
-        return res.status(HttpStatus.OK).send(book);
+    getBookByISBN(@Param('isbn') isbn:number){        
+        return this.bookService.getBook(isbn);
     }
 
-    @Get("/author/:lastName/:firstName")
-    async getBooksByAuthor(@Param('lastName')lastName: string, @Param('firstName')firstName: string, @Res() res: any) {
-        const books: IBook[] = await this.bookService.getAuthorBooks(lastName, firstName);
-        return res.status(HttpStatus.OK).send(books);
+    @Get("/author/:lastName/:firstName")    
+    getBooksByAuthor(@Param('lastName')lastName: string, @Param('firstName')firstName: string) {
+        return this.bookService.getAuthorBooks(lastName, firstName);
     }
 }
 

@@ -47,10 +47,13 @@ export class BooksRepository {
             },
             table,
         } as const);
-      
+        //const isbn = 1
+
+       //const b =  this.bookEntity.getBatch({ isbn: isbn, sk: isbn})
+       //console.log(b);
     }
 
-    async createBook(book: IBook) {
+    createBook(book: IBook) {
         try {
            return this.bookEntity.put(book);
 
@@ -64,9 +67,7 @@ export class BooksRepository {
         let book: IBook;
        
         try {
-            const response = await this.bookEntity.get(
-                { isbn: isbn, sk: isbn }                
-            );
+            const response = await this.bookEntity.get( { isbn: isbn, sk: isbn } );
             book = response.Item;    
 
         } catch (error) {
@@ -74,7 +75,7 @@ export class BooksRepository {
         }
 
         if (!book) {
-            throw new NotFoundException(`Book with ISBN "${isbn}" not found`);
+            throw new NotFoundException(`Book with ISBN '${isbn}' not found`);
         }
 
         return book;
@@ -98,7 +99,6 @@ export class BooksRepository {
               );
     
             books = result.Items;
-            console.log(books);
         } catch (error) {
             throw new InternalServerErrorException(error);
         }

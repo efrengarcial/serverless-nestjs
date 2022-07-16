@@ -7,15 +7,15 @@ export class BooksService {
 
     constructor(private bookRepo: BooksRepository) {}
 
-    async getBook(isbn: number) {
-        return await this.bookRepo.getBook(isbn);
+    getBook(isbn: number) {
+        return this.bookRepo.getBook(isbn);
     }
 
-    async getAuthorBooks(lastName: string, firstName: string) {
-        return await this.bookRepo.getBooksByAuthor(lastName, firstName);
+    getAuthorBooks(lastName: string, firstName: string) {
+        return this.bookRepo.getBooksByAuthor(lastName, firstName);
     }
 
-    async createBook(book: IBook) {
-        return await this.bookRepo.createBook(book);
+    createBook(book: IBook) {
+        return this.bookRepo.createBook(book);
     }
 }
